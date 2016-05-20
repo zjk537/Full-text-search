@@ -1,0 +1,285 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=gbk">
+    <meta name="googlebot" content="index,noarchive,nofollow,noodp" />
+    <meta name="robots" content="index,nofollow,noarchive,noodp" />
+    <link rel="stylesheet" href="/search/css/bootstrap.css" type="text/css" media="screen">
+    <title>虎踞龙蟠搜索<?php if ($q) echo ' | ' . strip_tags($q); ?></title>
+
+    <style type="text/css">
+        .container { margin-top: 8px; }
+        #q { height: 22px; line-height: 22px; }
+        #q-advance { margin-left: 5px; }
+        #q-btn { margin-left: -10px; height: 32px; }
+        #q-neck { margin-top: 10px; color: #999; border-bottom: 1px solid #DEDEDE; font-size: 12px; padding: 5px 0; }
+        #q-fix, #q-notfound { margin-top: 10px; }
+        #q-fix { font-size: 16px; }
+        #q-hot { margin-top: 20px; font-size: 14px; line-height: 18px; }
+        #q-hot small { margin-right: 8px; }
+        #q-hot a { color: green; }
+        .q-suggest { color: green; text-decoration: underline; }
+        #q-relate a { padding-right: 5px; }
+        .f-title { color: green; font-size: 14px; }
+        .filter { margin-top: 5px; margin-left: 0; list-style-type: none; }
+        .filter a { color: #BBB; display: block; padding-left: 5px; margin-bottom: 5px; height: 25px; line-height: 25px; }
+        .filter a:hover { color: #222; text-decoration: none; }
+        .filter a.active { color: #222; background: #EEE; }
+        .res-doc, .f-title { margin-top: 15px; }
+        .res-doc a, .res-doc a:hover { color: #12C; cursor: pointer; text-decoration: underline; }
+        .res-doc em { font-style: normal; color: red; }
+        .res-doc h2 { font-size: 16px; line-height: 22px; margin: 0; font-weight: normal; }
+        .res-doc h2 small { font-size: 12px; color: #aaa; }
+        .res-doc p { font-size: 12px; color: #333; margin: 2px 0; }
+        .res-doc ul { overflow: hidden; zoom: 1; margin: 0; padding: 0; }
+        .res-doc li { width: 130px; list-style: none; padding: 0; margin: 0 20px 0 0; float: left; font-size: 12px; color: green; }
+        .res-doc li a, .res-doc li span { text-decoration: none; border-bottom: 1px dotted #aaa; font-family: arial; color: #666; }
+        .res-doc li a:hover { text-decoration: none; color: #222; }
+        .res-error { margin-top: 10px; }
+        .footer { border-top:1px solid #eee; font-size: 12px; margin-top: 20px; margin-bottom: 20px; padding-top: 10px; color: #666; }
+        .footer a { color: #666; text-decoration: underline; }
+        .ac_results { padding: 0px; border: 1px solid rgb(129, 127, 130); background-color: white; overflow: hidden; z-index: 99999; }
+        .ac_results ul { width: 100%; list-style-position: outside; list-style: none; padding: 0; margin: 0; }
+        .ac_results li { margin: 0px; padding: 2px 5px; cursor: default; display: block; color: #333; font-size: 14px; line-height: 18px; overflow: hidden; }
+        .ac_over { background-color: #e2eaff; }
+        .popover .inner { width: 350px; }
+        .pagination a { color: #333; }
+        .r-range { padding: 5px 24px; }
+        .r-range label { width: 30px; margin-right: 10px;}
+        .r-label { margin: 0 0 5px 5px; }
+        .r-range input { width: 110px; }
+        .r-range .btn { width: 60px; margin-top: 5px;}
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="/s"><img src="/search/logo_s.png" alt="虎踞龙蟠搜索" /></a>
+
+    <div class="row">
+        <form action="/s" id="q-form" method="get">
+        <div class="span8">
+            <?php foreach ($attr as $k => $v): ?>
+            <?php if (!in_array($k, array('q'))): ?>
+            <input name="<?php echo $k ?>" type="hidden" value="<?php echo $v; ?>"/>
+            <?php endif; ?>
+            <?php endforeach; ?>
+            <input class="span8" id="q" name="q" size="30" type="text" title="欢迎使用虎踞龙蟠搜索" value="<?php echo htmlspecialchars($q); ?>"/>
+        </div>
+        <div class="span3">
+            <input id="q-btn" class="btn success" type="submit" value="  搜索!  " />
+            <a id="q-advance" title="高级搜索" data-content="载入中..." href="/search/tips.html">高级搜索</a>
+        </div>
+        </form>
+    </div>
+
+   <!-- hot search -->
+   <?php if (count($hot) > 0): ?>
+    <div id="q-hot" class="row">
+        <div style="width:90px" class="span2">
+            热门关键词：
+        </div>
+        <div class="span8">
+            <?php foreach($hot as $word => $freq): ?>
+            <a href="<?php echo '/s?q=' . urlencode($word); ?>"><?php echo $word; ?></a><small>(<?php echo $freq; ?>)</small>
+            <?php endforeach; ?>      
+        </div>
+   </div>
+   <?php endif; ?>
+
+   <!-- begin search result -->
+   <?php if (!empty($q)): ?>
+   
+   <!-- neck bar -->
+    <div class="row">
+        <div id="q-neck" class="span16">
+            大约有 <strong><?php echo number_format($count); ?></strong> 项符合查询结果，
+            库内数据总量为 <strong><?php echo number_format($total); ?></strong> 项。
+            （搜索耗时：<?php printf('%.4f', $search_cost); ?>秒）
+        </div>
+   </div>
+
+   <!-- error -->
+    <div class="row">
+        <div class="span12">
+            <?php if (!empty($error)): ?>
+            <div class="res-error"><strong>错误：</strong><?php echo $error; ?></div>
+            <?php endif; ?>
+
+            <!-- fixed query -->
+            <?php if (count($corrected) > 0): ?>
+            <div id="q-fix" class="row">
+                <div class="span5">
+                    您是不是要找：
+                    <?php foreach ($corrected as $word): ?>
+                    <a class="q-suggest" href="<?php echo '/s?q=' . urlencode($word); ?>"><?php echo $word; ?></a>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <!-- empty result -->
+            <?php if ($count === 0 && empty($error)): ?>
+            <div id="q-notfound" class="row">
+                <div class="span16">
+                    <p>找不到和 <strong><?php echo htmlspecialchars($q); ?></strong> 相符的内容或信息。建议您：</p>
+                    <ul>
+                        <li>请检查输入字词有无错误。</li>
+                        <li>请换用另外的查询字词。</li>
+                        <li>请改用较短、较为常见的字词。</li>
+                    </ul>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <!-- result doc list -->
+            <?php foreach ($docs as $doc): ?>
+            <div class="row">
+                <div class="span12">
+                    <div id="<?php echo $doc->id; ?>" class="res-doc">
+                        <h2>
+                            <?php $title = trim($doc->title) ? $search->highlight(htmlentities($doc->title, ENT_COMPAT, GB2312)) : '无标题'; ?>
+                            <?php if ($doc->good): ?>
+                            <a href="/bbsanc.php?path=<?php echo urlencode($doc->path); ?>"><?php echo $title ?></a>
+                            <?php else: ?>
+                            <a href="/bbscon.php?board=<?php echo $doc->board; ?>&id=<?php echo $doc->id; ?>"><?php echo $title ?></a>
+                            <?php endif; ?>
+                            <?php if ($doc->good): ?>
+                            <span class="label warning">精华帖</span>
+                            <?php endif; ?>
+                            <?php if ($doc->attachment): ?>
+                            <span class="label notice">有附件</span>
+                            <?php endif; ?>
+                            <?php if ($doc->mark): ?>
+                            <span class="label success">标记</span>
+                            <?php endif; ?>
+                        </h2>
+                        <?php try { ?>
+                        <p><?php echo $search->highlight(htmlentities($doc->content, ENT_COMPAT, 'GB2312')); ?></p>
+                        <?php } catch (Exception $e) { ?>
+                        <p><?php echo '索引中有无效文章内容，请报告技术站务'; ?></p>
+                        <?php } ?>
+                        <ul>
+                            <li>日期 <span><?php echo format_time($doc->time); ?></span></li>
+                            <li>版面 <span><a href="/bbsdoc.php?board=<?php echo $doc->board; ?>"><?php echo $doc->board; ?></a></span></li>
+                            <li>作者 <span><?php echo $doc->author; ?></span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <?php endforeach; ?>
+
+            <!-- pager -->
+            <?php if (!empty($pager)): ?>
+            <div class="row">
+                <div class="span16">
+                    <div class="pagination">
+                        <?php echo $pager; ?>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+            
+            <!-- related query -->
+            <?php if (count($related) > 0): ?>
+            <div id="q-relate" class="row">
+                <div class="alert-message warning span8">
+                    相关搜索&nbsp;&nbsp;&nbsp;
+                    <?php foreach ($related as $word): ?>
+                    <a href="<?php echo '/s?q=' . urlencode($word); ?>"><?php echo $word; ?></a>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+        </div>
+
+        <div class="offset1 span3">
+            <div class="row f-title">
+                搜索结果过滤
+            </div>
+            <div class="row">
+                <ul class="filter">
+                    <li><a <?php echo switch_attr($bu, $attr, 'f'); ?> >只显示主题贴</a></li>
+                    <li><a <?php echo switch_attr($bu, $attr, 'a'); ?> >只显示带附件的帖子</a></li>
+                    <li><a <?php echo switch_attr($bu, $attr, 'm'); ?> >只显示被标记的帖子</a></li>
+                    <li><a <?php echo switch_attr($bu, $attr, 'g'); ?> >只显示精华贴</a></li>
+                </ul>
+            </div>
+            <div class="row f-title">
+                时间范围
+            </div>
+            <div class="row">
+                <ul class="filter">
+                    <li><a <?php echo value_attr($bu, $attr, 't', 3); ?> >两天内</a></li>
+                    <li><a <?php echo value_attr($bu, $attr, 't', 4); ?> >一周内</a></li>
+                    <li><a <?php echo value_attr($bu, $attr, 't', 5); ?> >一月内</a></li>
+                    <li><a <?php echo value_attr($bu, $attr, 't', 0); ?> >两年内</a></li>
+                    <?php if ($loginok): ?>
+                    <li><a <?php echo value_attr($bu, $attr, 't', 1); ?> >任意时间段</a></li>
+                    <li><a id="custom-time" <?php echo value_attr($bu, $attr, 't', 2, true); ?> href="#"><?php echo ($t == 2 ?'从 ' . $since . ' 到 ' . $until : '自定义'); ?></a></li>
+                    <?php endif; ?>
+                </ul>
+                <form id="r-form" action="/s" method="get">
+                    <input type="hidden" name="q" value="<?php echo $q; ?>">
+                    <div id="range"></div>
+                </form>
+            </div>
+            <div class="row f-title">
+               结果排序 
+            </div>
+            <div class="row">
+                <ul class="filter">
+                    <li><a <?php echo value_attr($bu, $attr, 's', 0); ?> >按相关度排序</a></li>
+                    <li><a <?php echo value_attr($bu, $attr, 's', 1); ?> >按时间倒序</a></li>
+                    <li><a <?php echo value_attr($bu, $attr, 's', 2); ?> >按时间正序</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+   <!-- end search result -->
+   <?php endif; ?>
+</div><!-- /container -->
+
+<div class="footer">
+    <div class="container">
+      (C)opyright 2011 - 虎踞龙蟠BBS - 页面处理总时间：<?php printf('%.4f', $total_cost); ?>秒　<br />
+      Powered by <a href="http://www.xunsearch.com" target="_blank"><?php echo PACKAGE_NAME . '/' . PACKAGE_VERSION; ?></a> 
+    </div>
+</div>
+
+<script type="text/javascript" src="/search/js/libs.js"></script>
+<script type="text/javascript" src="/search/js/enhance.js"></script>
+
+<!-- ready script -->
+<script language="javascript">
+$(function(){
+   // input tips
+   $('#q').focus(function(){
+      if ($(this).val() == $(this).attr('title')) {
+         $(this).val('').removeClass('tips');
+      }
+   }).blur(function(){
+      if ($(this).val() == '' || $(this).val() == $(this).attr('title')) {
+         $(this).addClass('tips').val($(this).attr('title'));
+      }
+   }).blur().autocomplete('/search/suggest.php', {
+        width: 458,
+        selectFirst: false,
+        scroll: false
+    }).result(function(event, item) {
+        $('#q').val(item);
+        $('#q-form').submit();
+    });
+    // submit check
+   $('#q-form').submit(function(){
+      var $input = $('#q');
+      if ($input.val() == $input.attr('title')) {
+         alert('请先输入关键词');
+         $input.focus();
+         return false;
+      }
+   });
+});   
+</script>
+</body>
+</html>
